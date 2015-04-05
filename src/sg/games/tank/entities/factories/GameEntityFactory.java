@@ -1,7 +1,3 @@
-/*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
- */
 package sg.games.tank.entities.factories;
 
 import com.jme3.asset.AssetManager;
@@ -11,6 +7,7 @@ import sg.atom.corex.entity.Entity;
 import sg.atom.corex.entity.EntityFactory;
 import sg.atom.corex.entity.SpatialEntity;
 import sg.atom.corex.entity.SpatialEntityControl;
+import sg.games.tank.entities.ActorEntity;
 import sg.games.tank.entities.Soldier;
 import sg.games.tank.entities.Tower;
 
@@ -18,13 +15,13 @@ import sg.games.tank.entities.Tower;
  *
  * @author cuong.nguyen
  */
-public class GameEntityFactory extends EntityFactory{
+public class GameEntityFactory extends EntityFactory {
 
     public GameEntityFactory(AtomMain app) {
         super(app);
     }
-    
-    public Entity create(String type){
+
+    public Entity create(String type) {
         AssetManager assetManager = app.getAssetManager();
         Entity newEntity;
 
@@ -39,16 +36,15 @@ public class GameEntityFactory extends EntityFactory{
         } else {
             newEntity = createSpatialEntity(type, SpatialEntityControl.class);
         }
-        
+
         return newEntity;
     }
-    
 
     public SpatialEntity createTower(AssetManager assetManager) {
         Spatial model = app.getWorldManager().getModel("Tower").clone();
         String subType = "Tower";
-        SpatialEntity newEntity = new Tower(entityManager.getNewEntityId(), subType, model);
-//        entityManager.addEntity(newEntity);
+        ActorEntity newUnit = new Tower((int) entityManager.getNewEntityId(), subType, model);
+        SpatialEntity newEntity = newUnit.getEntity();
         newEntity.getSpatial().addControl(new SpatialEntityControl(entityManager, newEntity));
         return newEntity;
     }
@@ -57,8 +53,8 @@ public class GameEntityFactory extends EntityFactory{
         //Can use another mapping here?
         Spatial model = app.getWorldManager().getModel("Soldier").clone();
         String subType = "Soldier";
-        SpatialEntity newEntity = new Soldier(entityManager.getNewEntityId(), subType, model);
-//        entityManager.addEntity(newEntity);
+        ActorEntity newUnit = new Soldier((int) entityManager.getNewEntityId(), subType, model);
+        SpatialEntity newEntity = newUnit.getEntity();
         newEntity.getSpatial().addControl(new SpatialEntityControl(entityManager, newEntity));
         return newEntity;
     }

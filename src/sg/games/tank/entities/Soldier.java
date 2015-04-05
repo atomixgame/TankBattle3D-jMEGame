@@ -8,9 +8,8 @@ import com.jme3.scene.Spatial;
  */
 public class Soldier  extends Unit {
 
-    public Soldier(long iid, String type, Spatial spatial) {
+    public Soldier(int iid, String type, Spatial spatial) {
         super(iid, "Soldier", spatial);
-//        speed = 1;
     }
 
     public static class Builder {
@@ -19,8 +18,7 @@ public class Soldier  extends Unit {
     @Override
     public void update(float tpf) {
         super.update(tpf);
-//        Vector3f localTranslation = this.spatial.getLocalTranslation().clone();
-//        this.spatial.setLocalTranslation(localTranslation.add(0, 0, speed * tpf));
+
 
     }
 }

@@ -1,5 +1,7 @@
 package sg.games.tank.gameplay;
 
+import com.badlogic.gdx.math.MathUtils;
+import com.badlogic.gdx.utils.Disposable;
 import com.jme3.app.Application;
 import com.jme3.app.state.AppStateManager;
 import sg.atom.ai.agents.Agent;
@@ -21,6 +23,8 @@ import com.jme3.renderer.Camera;
 import com.jme3.scene.Geometry;
 import com.jme3.scene.Node;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sg.atom.core.AtomMain;
@@ -29,9 +33,11 @@ import sg.atom.corex.entity.EntityManager;
 import sg.atom.corex.entity.SpatialEntity;
 import sg.atom.corex.managers.WorldManager;
 import static sg.atom.corex.managers.WorldManager.createRandomPos;
-import sg.games.tank.ai.behaviours.AIAttackBehaviour;
-import sg.games.tank.ai.behaviours.AIMainBehaviour;
+import sg.atom.corex.stage.Stage;
+import sg.games.tank.TankBattleMain;
 import sg.games.tank.entities.Unit;
+import sg.games.tank.entities.factories.UnitType;
+import sg.games.tank.entities.managers.UnitManager;
 import sg.games.tank.stage.cam.RTSCamera;
 
 /**
@@ -42,7 +48,7 @@ import sg.games.tank.stage.cam.RTSCamera;
  *
  * @author cuong.nguyen
  */
-public class GamePlayManager extends AbstractManager {
+public class GamePlayManager extends AbstractManager implements Disposable {
 
     public static final Logger logger = LoggerFactory.getLogger("GamePlayManager");
     //Wave
@@ -63,15 +69,28 @@ public class GamePlayManager extends AbstractManager {
     int gunType;
     int gunStatus;
     float gunRange;
-    ArrayList<GameLevel> levels;
-    GameLevel currentLevel;
-    Wave currentWave;
-    AgentsAppState agentsAppState;
+    private TankBattleMain game;
+    private ArrayList<Player> players;
+    private Match currentMatch;
+    private ArrayList<GameLevel> levels;
+    private int currentLevelIndex;
+    private ArrayList selection;
+    private UnitManager unitManager;
+    private Player localPlayer;
+//    private int mode;
+    private Player player1;
+    private Player player2;
+    private GameLevel currentLevel;
+    private LevelManager levelManager;
+    private Wave currentWave;
+    private AgentsAppState agentsAppState;
     private Team team1;
     private Team team2;
 
     public GamePlayManager(AtomMain app) {
         super(app);
+
+        game = TankBattleMain.getInstance();
     }
 
     @Override
@@ -79,6 +98,102 @@ public class GamePlayManager extends AbstractManager {
         super.initialize(stateManager, app);
 
         setEnabled(true);
+    }
+
+    public void init() {
+        setupPlayers();
+
+        setupLevels();
+
+        // managers
+        this.unitManager = new UnitManager(game);
+        this.unitManager.init();
+    }
+
+    void setupPlayers() {
+        // create random players
+        player1 = game.getPlayerManager().createMockPlayer(false);
+        player2 = game.getPlayerManager().createMockPlayer(true);
+        player1.setGamePlay(this);
+        player2.setGamePlay(this);
+        this.localPlayer = player1;
+    }
+
+    public void createSampleMatch() {
+
+        createMatch(player1, player2);
+    }
+
+    public Match createMatch(Player... players) {
+
+        // create a sample match
+        currentMatch = new Match();
+        currentMatch.init(players);
+        this.players = new ArrayList<Player>();
+        this.players.addAll(Arrays.asList(players));
+        return currentMatch;
+    }
+
+    public void startMatch(Stage stage) {
+        currentMatch.start();
+
+        for (Player player : currentMatch.getPlayers()) {
+            Country country = new Country();
+            country.init(player, currentMatch);
+
+            unitManager.createEntities(stage, country);
+            // unitManager.linkTarget(stage);
+            country.onStartMatch();
+        }
+
+        startWave();
+        setupInput();
+    }
+
+    public void endMatch() {
+    }
+
+    public void spawn(UnitType type, Stage stage, int x, int y) {
+        // Player player = game.getGamePlay().getCurrentPlayer();
+        List<Player> players = getPlayers();
+        Player player = players.get(MathUtils.random(players.size() - 1));
+        player.getCountry().createUnit(type, stage, x, y);
+    }
+
+    void setupLevels() {
+        this.levelManager = new LevelManager(game);
+        this.levelManager.init();
+        initLevel(levelManager.getCurrentLevel());
+
+    }
+
+    void initLevel(GameLevel newLevel) {
+    }
+
+    void loadLevel() {
+    }
+
+    void startLevel() {
+    }
+
+    void endLevel() {
+    }
+
+    public boolean checkGameState() {
+        return false;
+    }
+
+    public boolean isEnd() {
+        return false;
+    }
+
+    public void createCountry(Player player) {
+    }
+
+    public void finishLoading() {
+        unitManager.getUnitFactory().loadAssets();
+//		game.getAssetManager().finishLoading();
+
     }
 
     public void setupInput() {
@@ -114,15 +229,8 @@ public class GamePlayManager extends AbstractManager {
     }
 
     public void startGame() {
-        agentsAppState = AgentsAppState.getInstance();
-        agentsAppState.setApp(app);
         RTSCamera camControler = app.getStateManager().getState(RTSCamera.class);
         camControler.setCenter(new Vector3f(10, 0, 10));
-        team1 = new Team("Team1");
-        team2 = new Team("Team2");
-        startWave();
-        setupInput();
-        agentsAppState.start();
     }
 
     void restartGame() {
@@ -193,14 +301,7 @@ public class GamePlayManager extends AbstractManager {
     void reload() {
         ammo = maxAmmo;
     }
-//
-//    void updateEntities() {
-//    }
-//    void updateWave() {
-//    }
 
-//    void nextWave() {
-//    }
     public SpatialEntity spawn(String type, Vector2f pos) {
         WorldManager worldManager = app.getWorldManager();
         EntityManager entityManager = app.getEntityManager();
@@ -214,44 +315,50 @@ public class GamePlayManager extends AbstractManager {
     }
 
     void startWave() {
-
-        for (int c = 0; c < 20; c++) {
-            Unit soldier = (Unit) spawn("Soldier", createRandomPos(100, 3));
-
-            Agent<Unit> unitAgent = soldier.getAgent();
-            agentsAppState.addAgent(unitAgent);
-            unitAgent.setTeam(team1);
-            unitAgent.setVisibilityRange(100f);
-
-            unitAgent.setMass(1);
-            unitAgent.setMoveSpeed(2.0f);
-            unitAgent.setRotationSpeed(1.0f);
-            unitAgent.setMaxForce(3);
-//            unitAgent.setAcceleration(Vector3f.ZERO);
-            unitAgent.setMainBehaviour(new AIMainBehaviour(unitAgent));
-
-        }
-
-        for (int c = 0; c < 10; c++) {
-            Unit tower = (Unit) spawn("Tower", createRandomPos(100, 100));
-            Agent<Unit> unitAgent = tower.getAgent();
-            agentsAppState.addAgent(unitAgent);
-            unitAgent.setTeam(team2);
-            unitAgent.setAcceleration(Vector3f.ZERO);
-            unitAgent.setVisibilityRange(20f);
-            unitAgent.setMainBehaviour(new AIAttackBehaviour(unitAgent));
-        }
     }
 
     void endWave() {
     }
 
+    void sampleWave() {
+//        for (int c = 0; c < 20; c++) {
+//            Unit soldier = (Unit) spawn("Soldier", createRandomPos(100, 3));
+//
+//            Agent<Unit> unitAgent = soldier.getAgent();
+//            agentsAppState.addAgent(unitAgent);
+//            unitAgent.setTeam(team1);
+//            unitAgent.setVisibilityRange(100f);
+//
+//            unitAgent.setMass(1);
+//            unitAgent.setMoveSpeed(2.0f);
+//            unitAgent.setRotationSpeed(1.0f);
+//            unitAgent.setMaxForce(3);
+////            unitAgent.setAcceleration(Vector3f.ZERO);
+//            unitAgent.setMainBehaviour(new AIMainBehaviour(unitAgent));
+//
+//        }
+//
+//        for (int c = 0; c < 10; c++) {
+//            Unit tower = (Unit) spawn("Tower", createRandomPos(100, 100));
+//            Agent<Unit> unitAgent = tower.getAgent();
+//            agentsAppState.addAgent(unitAgent);
+//            unitAgent.setTeam(team2);
+//            unitAgent.setAcceleration(Vector3f.ZERO);
+//            unitAgent.setVisibilityRange(20f);
+//            unitAgent.setMainBehaviour(new AIAttackBehaviour(unitAgent));
+//        }
+    }
+
+//
+//    void updateEntities() {
+//    }
+//    void updateWave() {
+//    }
+//    void nextWave() {
+//    }
     @Override
     public void update(float tpf) {
         super.update(tpf);
-        agentsAppState.update(tpf);
-//        logger.info("Gameplay update");
-//        System.out.println("Gameplay update");
     }
 
     //GETTER & SETTER
@@ -265,5 +372,28 @@ public class GamePlayManager extends AbstractManager {
 
     public int getScore() {
         return score;
+    }
+
+    public Player getCurrentPlayer() {
+        return localPlayer;
+    }
+
+    public Match getCurrentMatch() {
+        return currentMatch;
+    }
+
+    public ArrayList<Player> getPlayers() {
+        return players;
+    }
+
+    public LevelManager getLevelManager() {
+        return levelManager;
+    }
+
+    public UnitManager getUnitManager() {
+        return unitManager;
+    }
+
+    public void dispose() {
     }
 }

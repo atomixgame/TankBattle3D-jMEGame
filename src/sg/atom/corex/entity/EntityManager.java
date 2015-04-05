@@ -129,9 +129,9 @@ public class EntityManager extends AbstractManager {
         return new ArrayList<String>();
     }
 
-    public Long getNewEntityId() {
+    public long getNewEntityId() {
         totalEntityId++;
-        return new Long(totalEntityId);
+        return totalEntityId;
     }
 
     public void addEntity(SpatialEntity e) {

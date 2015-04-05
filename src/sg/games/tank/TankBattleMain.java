@@ -42,7 +42,7 @@ public class TankBattleMain extends AtomMain {
 //cfg.setFrequency(60); // set to screen refresh rate
         cfg.setResolution(deviceSettings.width, deviceSettings.height);
 //        cfg.setFullscreen(true);
-        cfg.setTitle("Dragon Defense");
+        cfg.setTitle("Tank Battle Defense");
         app.setDisplayStatView(false);
         app.setShowSettings(false);
         app.setSettings(cfg);
@@ -54,6 +54,5 @@ public class TankBattleMain extends AtomMain {
 //        stateManager.attach(new SplashState());
 //        stateManager.attach(new MainMenuState());
         stateManager.attach(new InGameState());
-
     }
 }

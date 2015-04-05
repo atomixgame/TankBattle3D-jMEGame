@@ -1,115 +1,309 @@
 package sg.games.tank.entities;
 
-import sg.atom.ai.agents.Agent;
-import sg.atom.ai.agents.control.AgentsAppState;
-import com.jme3.animation.AnimControl;
-import com.jme3.app.Application;
-import com.jme3.material.Material;
 import com.jme3.math.ColorRGBA;
-import com.jme3.math.Vector3f;
-import com.jme3.scene.Geometry;
-import com.jme3.scene.Mesh;
-import com.jme3.scene.Node;
 import com.jme3.scene.Spatial;
-import com.jme3.scene.debug.Arrow;
+import static sg.atom.corex.stage.actions.Actions.*;
+
 import java.util.List;
-import org.customsoft.stateless4j.StateMachine;
-import sg.atom.corex.entity.SpatialEntity;
-import sg.games.tank.ai.AIEvent;
-import sg.games.tank.ai.states.AIState;
+
+import sg.games.tank.entities.managers.UnitManager;
+import sg.games.tank.gameplay.Country;
+import sg.atom.corex.entity.EntityFunction;
+import sg.atom.corex.stage.Action;
+import sg.atom.corex.stage.Stage;
+import sg.games.tank.ai.states.CommonStates;
+import sg.games.tank.ai.states.FrequentStateMachine;
 
 /**
- * Unit is the basic Entity which has Spatial and Agent.
+ * Base class of unit in RTS game.
  *
- * Sketch of AI.
- *
- * -find the target
- *
- * - go straight to the target if no particular danger
- *
- * - go in zigzag to the target if there is danger
- *
- * - shoot if close enough (in range)
- *
- * - die or explode if out of health
+ * - Use FSM for AI. This is a hybrid method. You can add custom behaviors by
+ * override public methods. - Use Steering for low level movement - - Poolable
  *
  * @author cuong.nguyen
+ *
  */
-public class Unit extends SpatialEntity {
+public class Unit extends SteeringActor {
+//    RobotAttack app;
+    
+    String typeName;
+    Country country;
+    
+    UnitManager unitManager;
+    List<EntityFunction> functions;
+//    List<Skill> skills;
+    int unitType;
+    int vehicleType;
+    boolean floating = false;
+    boolean active = false;
+    // Dependencies
+    int[] requiredUnitIds;
+    int[] requiredSkillIds;
+    int[] requiredTokens;
+    // Health
+    public int health;
+    int maxHealth;
+    int energy;
+    int maxEnergy;
+    // Point
+    int createdUnitNum;
+    int destroyedUnitNum;
+    int totalPoint;
+    // Resource
+    int foodCarry;
+    int egnergyCarry;
+    // Cost
+    int populationCost;
+    int energyCost;
+    int moneyCost;
+    // Combat
+    public float lookRange = 400;
+    public float attackRange = 200;
+    // Timing
+    public float preactiveDuration = 1;
+    float activeTime = 0;
+    public float shootInterval = 2;
+    // UI
+//	private HealthBar healthBar;
+    private boolean showHealthBar = false;
+    // AI
+    protected ActorEntity target;
+    // FSM
+    public FrequentStateMachine<Unit> commonFSM;
+    // protected FrequentStateMachine<Unit> movementFSM;
+    public FrequentStateMachine<Unit> combatFSM;
+    public FrequentStateMachine<Unit> actionFSM;
+    protected Stage assignStage;
+    public float deltaTime;
+//    private DebugInfo debugInfo;
+    protected boolean showDebugInfo = true;
 
-    protected StateMachine<AIState, AIEvent> brain;
-    protected Agent<Unit> agent;
-    protected Gun gun;
-    protected List<AnimControl> animationList;
-    protected String[] animationNames = {"run"};
+    public Unit(String typeName) {
+        super();
+        this.typeName = typeName;
+    }
 
-    public Unit(long iid, String type, Spatial spatial) {
-        super(iid, type, spatial);
+    public Unit(int iid, String typeName, Spatial spatial){
+        
+    }
+    public boolean canAttack() {
+        return true;
+    }
+
+    public void init() {
+    }
+
+    public void load() {
+    }
+
+    public void attack(Unit target) {
+    }
+
+    public void invoke(EntityFunction func) {
+    }
+
+    public void destroyUnit() {
+    }
+
+    public void onAttacked(Unit from) {
+    }
+
+    public void onImpact(Projectile bullet) {
+        this.health -= bullet.getDamage();
+        // Gdx.app.log("Unit", "damage ");
+    }
+
+    public void die() {
+        deactiveUnit();
+        this.addAction(sequence(fadeOut(0.1f), removeActor(), new Action() {
+            @Override
+            public boolean act(float delta) {
+                return false;
+            }
+        }));
+    }
+
+    // FIXME: Move to State enter ?
+    public void preactiveUnit(Country country, Stage stage) {
+        this.country = country;
+        this.country.changePopulation(1);
+        this.assignStage = stage;
+    }
+
+    public void activeUnit() {
+//		createUnitUI(this.assignStage);
+        // this.movementFSM = new FrequentStateMachine<Unit>(this,
+        // MovementStates.Stop);
+        this.actionFSM = new FrequentStateMachine<Unit>(this);
+        this.combatFSM = new FrequentStateMachine<Unit>(this);
+    }
+
+    public void activeUnit(Country country, Stage stage) {
+//		createUnitUI(stage);
+    }
+
+    public void deactiveUnit() {
+        // this.active = false;
+        // this.activeTime = 0;
+        this.country.changePopulation(-1);
+
+        removeUnitUI();
+    }
+
+    public void createUnitUI(Stage stage) {
+//		if (showHealthBar) {
+//			this.healthBar = new HealthBar(this);
+//			stage.addActor(healthBar);
+//		}
+//		if (showDebugInfo) {
+//			this.debugInfo = new DebugInfo(this);
+//			this.debugInfo.create(stage);
+//		}
+    }
+
+    public void removeUnitUI() {
+//		if (showHealthBar) {
+//			this.healthBar.remove();
+//		}
+//		if (showDebugInfo) {
+//			this.debugInfo.remove();
+//		}
     }
 
     @Override
-    public void init(Application app) {
-        this.agent = new Agent(type, spatial);
-        this.agent.setModel(this);
-        this.gun = new Gun(agent);
+    public void act(float delta) {
+        super.act(delta);
+
+        // FIXME: Timing should be inject somehow?
+        // if (this.commonFSM.getCurrentState() == CommonStates.Active) {
+        // this.activeTime += delta;
+        // }
+        // ((CommonStates) commonFSM.getCurrentState()).updateStateTime(delta);
+        this.deltaTime = delta;
+        commonFSM.update(delta);
     }
 
-    void addArrow() {
+    // Commands pattern to expand behaviors by override (subclass)
+    public void letActiveUnit(Country country, Stage stage) {
+        this.preactiveUnit(country, stage);
+        this.setColor(new ColorRGBA(country.getColor()));
 
-        // add arrow
-        Mesh arrow = new Arrow(Vector3f.UNIT_Z);
-        Geometry geoArrow = new Geometry("arrow", arrow);
-        Material matArrow = new Material(AgentsAppState.getInstance().getApp().getAssetManager(), "Common/MatDefs/Misc/Unshaded.j3md");
-        matArrow.setColor("Color", ColorRGBA.White);
-        geoArrow.setMaterial(matArrow);
-        geoArrow.setLocalTranslation(0f, 0.1f, 0f);
-        ((Node) agent.getSpatial()).attachChild(geoArrow);
+        // Create Unit AI
+        this.commonFSM = new FrequentStateMachine<Unit>(this,
+                CommonStates.Preactive);
     }
 
-    public void onStage() {
-//        this.spatial.addControl(agent);
+    public void letMoveToTarget() {
+        // Not move is default
     }
 
-    public Agent<Unit> getAgent() {
-        return agent;
+    public void letStopMoving() {
+        this.setSteeringBehavior(null);
     }
 
-    public void setAgent(Agent<Unit> agent) {
-        this.agent = agent;
+    public void letFindTarget() {
+        Unit nearestTarget = unitManager.getNearestUnitEnemyInRange(this);
+        this.target = nearestTarget;
+
     }
 
-    public Gun getGun() {
-        return gun;
+    public void letAttack() {
     }
 
-    public void setGun(Gun gun) {
-        this.gun = gun;
+    public void letDefense() {
     }
 
-    public List<AnimControl> getAnimationList() {
-        return animationList;
+    public void letMove() {
     }
 
-    public void setAnimationList(List<AnimControl> animationList) {
-        this.animationList = animationList;
+    public void letGuard() {
     }
 
-    public String[] getAnimationNames() {
-        return animationNames;
+    public void letDie() {
     }
 
-    public void setAnimationNames(String[] animationNames) {
-        this.animationNames = animationNames;
+    // SETTER & GETTER
+    public String getTypeName() {
+        return typeName;
     }
 
-    public void setWalkDirection(Vector3f vel) {
-
-        
-        Vector3f newPos = getSpatial().getLocalTranslation().add(vel);
-        getSpatial().setLocalTranslation(newPos);
+    public void setTypeName(String typeName) {
+        this.typeName = typeName;
     }
 
-    public void setViewDirection(Vector3f normalize) {
-        
+    public Country getCountry() {
+        return country;
+    }
+
+    public void setCountry(Country country) {
+        this.country = country;
+    }
+
+    public List<EntityFunction> getFunctions() {
+        return functions;
+    }
+
+    public void setUnitManager(UnitManager unitManager) {
+        this.unitManager = unitManager;
+    }
+
+    public float getAttackRange() {
+        return attackRange;
+    }
+
+    public void setAttackRange(float attackRange) {
+        this.attackRange = attackRange;
+    }
+
+    public float getLookRange() {
+        return lookRange;
+    }
+
+    public void setLookRange(float lookRange) {
+        this.lookRange = lookRange;
+    }
+
+    public int getHealth() {
+        return health;
+    }
+
+    public void setHealth(int health) {
+        this.health = health;
+    }
+
+    public int getMaxHealth() {
+        return maxHealth;
+    }
+
+    public void setMaxHealth(int maxHealth) {
+        this.maxHealth = maxHealth;
+    }
+
+    public void setShowHealthBar(boolean showHealthBar) {
+        this.showHealthBar = showHealthBar;
+    }
+
+    public void setShowDebugInfo(boolean showDebugInfo) {
+        this.showDebugInfo = showDebugInfo;
+    }
+
+    public ActorEntity getTarget() {
+        return target;
+    }
+
+    public void setTarget(ActorEntity target) {
+        this.target = target;
+    }
+
+    public FrequentStateMachine<Unit> getCommonFSM() {
+        return commonFSM;
+    }
+
+    public FrequentStateMachine<Unit> getCombatFSM() {
+        return combatFSM;
+    }
+
+    public FrequentStateMachine<Unit> getActionFSM() {
+        return actionFSM;
     }
 }

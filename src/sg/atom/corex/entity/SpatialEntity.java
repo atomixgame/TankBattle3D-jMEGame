@@ -76,12 +76,6 @@ public class SpatialEntity implements Entity, ManagableObject{
         
     }
 
-//    public void addAction(GameAction action) {
-//        actions.add(action);
-//    }
-//    public void act(GameAction action){
-//        
-//    }
     public void onEvent(Object event) {
     }
 
@@ -95,6 +89,10 @@ public class SpatialEntity implements Entity, ManagableObject{
 
     public EntityId getId() {
         return null;
+    }
+
+    public void setIid(long iid) {
+        this.iid = iid;
     }
 
     public void compose(Object... components) {

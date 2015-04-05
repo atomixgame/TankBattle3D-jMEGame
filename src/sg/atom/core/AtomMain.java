@@ -8,10 +8,6 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.ServiceManager;
 import com.jme3.app.SimpleApplication;
-import com.jme3.input.KeyInput;
-import com.jme3.input.controls.ActionListener;
-import com.jme3.input.controls.AnalogListener;
-import com.jme3.input.controls.KeyTrigger;
 import com.jme3.renderer.RenderManager;
 import com.jme3.system.AppSettings;
 import java.util.concurrent.Executors;
@@ -27,6 +23,7 @@ import sg.atom.corex.managers.MaterialManager;
 import sg.atom.corex.managers.SoundManager;
 import sg.atom.corex.managers.StageManager;
 import sg.atom.corex.managers.WorldManager;
+import sg.games.tank.gameplay.PlayerManager;
 
 /**
  *
@@ -36,6 +33,7 @@ public class AtomMain extends SimpleApplication implements IGameCycle {
 
     protected StageManager stageManager;
     protected GUIManager guiManager;
+    protected PlayerManager playerManager;
     protected GamePlayManager gamePlayManager;
     protected WorldManager worldManager;
     protected SoundManager soundManager;
@@ -131,28 +129,18 @@ public class AtomMain extends SimpleApplication implements IGameCycle {
     }
 
     public void setupInput() {
-        //Mouse
-        //Key
-        inputManager.addMapping("Help",
-                new KeyTrigger(KeyInput.KEY_SPACE));
-        inputManager.addListener(actionListener, "Help");
-//        inputManager.addListener(analogListener, "Shoot");
+//        inputManager.addMapping("Help",
+//                new KeyTrigger(KeyInput.KEY_F1));
+//        inputManager.addListener(actionListener, "Help");
     }
-    private ActionListener actionListener = new ActionListener() {
-        public void onAction(String name, boolean pressed, float tpf) {
-//            if (name.equals("Shoot") && !pressed) {
-//                shoot();
-//            } else if (name.equals("Reload") && !pressed) {
-//                reload();
-//            }
-        }
-    };
-    private AnalogListener analogListener = new AnalogListener() {
-        public void onAnalog(String name, float intensity, float tpf) {
-//            if (name.equals("Shoot")) {
-//            }
-        }
-    };
+//    private ActionListener actionListener = new ActionListener() {
+//        public void onAction(String name, boolean pressed, float tpf) {
+//        }
+//    };
+//    private AnalogListener analogListener = new AnalogListener() {
+//        public void onAnalog(String name, float intensity, float tpf) {
+//        }
+//    };
 
     public AppSettings getSettings() {
         return settings;
@@ -204,5 +192,9 @@ public class AtomMain extends SimpleApplication implements IGameCycle {
 
     public ListeningExecutorService getExecutorService() {
         return executorService;
+    }
+
+    public PlayerManager getPlayerManager() {
+        return playerManager;
     }
 }
