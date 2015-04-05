@@ -1,0 +1,61 @@
+<?xml version='1.0' encoding='UTF-8'?>
+
+<!--- Put your DTDDoc comment here. -->
+<!ELEMENT map (layer|tileset)*>
+<!ATTLIST map
+    tileheight CDATA #IMPLIED
+    tilewidth CDATA #IMPLIED
+    height CDATA #IMPLIED
+    width CDATA #IMPLIED
+    orientation CDATA #IMPLIED
+    version CDATA #IMPLIED
+  >
+
+<!--- Put your DTDDoc comment here. -->
+<!ELEMENT tileset (tile|terraintypes|image)*>
+<!ATTLIST tileset
+    tileheight CDATA #IMPLIED
+    tilewidth CDATA #IMPLIED
+    name CDATA #IMPLIED
+    firstgid CDATA #IMPLIED
+  >
+
+<!--- Put your DTDDoc comment here. -->
+<!ELEMENT image EMPTY>
+<!ATTLIST image
+    height CDATA #IMPLIED
+    width CDATA #IMPLIED
+    source CDATA #IMPLIED
+  >
+
+<!--- Put your DTDDoc comment here. -->
+<!ELEMENT terraintypes (terrain)*>
+
+<!--- Put your DTDDoc comment here. -->
+<!ELEMENT terrain EMPTY>
+<!ATTLIST terrain
+    tile CDATA #IMPLIED
+    name CDATA #IMPLIED
+  >
+
+<!--- Put your DTDDoc comment here. -->
+<!ELEMENT tile EMPTY>
+<!ATTLIST tile
+    terrain CDATA #IMPLIED
+    id CDATA #IMPLIED
+  >
+
+<!--- Put your DTDDoc comment here. -->
+<!ELEMENT layer (data)*>
+<!ATTLIST layer
+    height CDATA #IMPLIED
+    width CDATA #IMPLIED
+    name CDATA #IMPLIED
+  >
+
+<!--- Put your DTDDoc comment here. -->
+<!ELEMENT data (#PCDATA)>
+<!ATTLIST data
+    compression CDATA #IMPLIED
+    encoding CDATA #IMPLIED
+  >

@@ -1,0 +1,28 @@
+<?xml version='1.0' encoding='UTF-8'?>
+
+<!--- Put your DTDDoc comment here. -->
+<!ELEMENT img (definitions)*>
+<!ATTLIST img
+    h CDATA #IMPLIED
+    w CDATA #IMPLIED
+    name CDATA #IMPLIED
+  >
+
+<!--- Put your DTDDoc comment here. -->
+<!ELEMENT definitions (dir)*>
+
+<!--- Put your DTDDoc comment here. -->
+<!ELEMENT dir (spr)*>
+<!ATTLIST dir
+    name CDATA #IMPLIED
+  >
+
+<!--- Put your DTDDoc comment here. -->
+<!ELEMENT spr EMPTY>
+<!ATTLIST spr
+    h CDATA #IMPLIED
+    w CDATA #IMPLIED
+    y CDATA #IMPLIED
+    x CDATA #IMPLIED
+    name CDATA #IMPLIED
+  >
